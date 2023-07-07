@@ -34,7 +34,7 @@ os.environ["PYTHONHASHSEED"] = str(RANDOM_SEED)
 random.seed(RANDOM_SEED)
 
 
-class StandoneCode:
+class StandaloneCode:
     # dict.get()：返回指定键的值，如果键不在字典中返回默认值 None 或者设置的默认值
     def __init__(self, conf=None):
         self.conf = dict() if conf is None else conf
@@ -369,7 +369,7 @@ if __name__ == "__main__":
     logger.info("Build Model")
     # Define model
     model = eval(conf["model_params"]["model_name"])(conf)
-    StandoneCode = StandoneCode(conf)
+    StandaloneCode = StandaloneCode(conf)
     # ====================================sql打标签====================================
     # ---------有标签的地址----------
     hnn_label_sql_path = (
@@ -436,29 +436,29 @@ if __name__ == "__main__":
     if args.mode == "eval":
         """--------------------------------sql打标签-----------------------------------"""
         # 第一次执行:codemf
-        StandoneCode.loadModelEpoch(
+        StandaloneCode.loadModelEpoch(
             model, 86, 0.25, 0.25, 0.25, 0.25, 0.0004000000000000001
         )
         # 第二次执行:text_sa
-        StandoneCode.loadModelEpoch(model, 1033, 0.1, 0.1, 0.1, 0.1, 1.0002)
+        StandaloneCode.loadModelEpoch(model, 1033, 0.1, 0.1, 0.1, 0.1, 1.0002)
         # 第三次执行:code_sa
-        StandoneCode.loadModelEpoch(model, 1111, 0.1, 0.1, 0.1, 0.1, 101)
+        StandaloneCode.loadModelEpoch(model, 1111, 0.1, 0.1, 0.1, 0.1, 101)
 
         # -----------------staqc_sql------------------------
         # 第一次执行
-        StandoneCode.u2l_codemf(model, SQL_PATHS["STAQC_F"], staqc_sql_final_label)
+        StandaloneCode.u2l_codemf(model, SQL_PATHS["STAQC_F"], staqc_sql_final_label)
         # 第二次执行
-        StandoneCode.u2l_textsa(model, SQL_PATHS["STAQC_F"], staqc_sql_final_label)
+        StandaloneCode.u2l_textsa(model, SQL_PATHS["STAQC_F"], staqc_sql_final_label)
         # 第三次执行
-        StandoneCode.u2l_codesa(model, SQL_PATHS["STAQC_F"], staqc_sql_final_label)
+        StandaloneCode.u2l_codesa(model, SQL_PATHS["STAQC_F"], staqc_sql_final_label)
 
         # -----------------large_sql------------------------
         # 第一次执行
-        StandoneCode.u2l_codemf(model, SQL_PATHS["STAQC_F"], large_sql_final_label)
+        StandaloneCode.u2l_codemf(model, SQL_PATHS["STAQC_F"], large_sql_final_label)
         # 第二次执行
-        StandoneCode.u2l_textsa(model, SQL_PATHS["STAQC_F"], large_sql_final_label)
+        StandaloneCode.u2l_textsa(model, SQL_PATHS["STAQC_F"], large_sql_final_label)
         # 第三次执行
-        StandoneCode.u2l_codesa(model, SQL_PATHS["STAQC_F"], large_sql_final_label)
+        StandaloneCode.u2l_codesa(model, SQL_PATHS["STAQC_F"], large_sql_final_label)
 
         # =====================分析最终标签==============================
         # staqc:抽取codemf、testsa、codesa里面标签都为1
@@ -475,27 +475,27 @@ if __name__ == "__main__":
 
         """--------------------------------python打标签-----------------------------------"""
         # 第一次执行：codemf
-        StandoneCode.loadModelEpoch(model, 1166, 0.5, 0.45, 0.55, 0.45, 0.0006)
+        StandaloneCode.loadModelEpoch(model, 1166, 0.5, 0.45, 0.55, 0.45, 0.0006)
         # 第二次执行：test_sa
-        StandoneCode.loadModelEpoch(model, 1079, 0.5, 0.5, 0.5, 0.5, 1.0002)
+        StandaloneCode.loadModelEpoch(model, 1079, 0.5, 0.5, 0.5, 0.5, 1.0002)
         # 第三次执行code_sa
-        StandoneCode.loadModelEpoch(model, 138, 0.15, 0.15, 0.15, 0.15, 101)
+        StandaloneCode.loadModelEpoch(model, 138, 0.15, 0.15, 0.15, 0.15, 101)
 
         # -----------------staqc_python------------------------
         # 第一次执行
-        StandoneCode.u2l_codemf(model, staqc_python_f, staqc_python_final_label)
+        StandaloneCode.u2l_codemf(model, staqc_python_f, staqc_python_final_label)
         # 第二次执行
-        StandoneCode.u2l_textsa(model, staqc_python_f, staqc_python_final_label)
+        StandaloneCode.u2l_textsa(model, staqc_python_f, staqc_python_final_label)
         # 第三次执行
-        StandoneCode.u2l_codesa(model, staqc_python_f, staqc_python_final_label)
+        StandaloneCode.u2l_codesa(model, staqc_python_f, staqc_python_final_label)
 
         # -----------------large_python------------------------
         # 第一次执行
-        StandoneCode.u2l_codemf(model, large_python_f, large_python_final_label)
+        StandaloneCode.u2l_codemf(model, large_python_f, large_python_final_label)
         # 第二次执行
-        StandoneCode.u2l_textsa(model, large_python_f, large_python_final_label)
+        StandaloneCode.u2l_textsa(model, large_python_f, large_python_final_label)
         # 第三次执行
-        StandoneCode.u2l_codesa(model, large_python_f, large_python_final_label)
+        StandaloneCode.u2l_codesa(model, large_python_f, large_python_final_label)
 
         # =====================分析最终标签==============================
         # staqc:抽取codemf、testsa、codesa里面标签都为1
