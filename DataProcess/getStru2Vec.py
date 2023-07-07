@@ -1,255 +1,159 @@
-
-'''
-
-并行分词
-'''
-import os
 import pickle
-import logging
-
 import sys
-sys.path.append("..")
-
-# 解析结构
-from python_structured import *
-from sqlang_structured import *
-
-#FastText库  gensim 3.4.0
-from gensim.models import FastText
-
-import numpy as np
-
-#词频统计库
-import collections
-#词云展示库
-import wordcloud
-#图像处理库 Pillow 5.1.0
-from PIL import Image
-
-# 多进程
 from multiprocessing import Pool as ThreadPool
+from DataProcess.python_structured import (
+    pythonCodeParse,
+    pythonContextParse,
+    pythonQueryParse,
+)
+from DataProcess.sqlang_structured import (
+    sqlangCodeParse,
+    sqlangContextParse,
+    sqlangQueryParse,
+)
+
+sys.path.append("..")
+PYTHON_PATHS = {
+    "PYTHON_WORD": "data_processing/hnn_process/data/word_dict/python_word_vocab_dict.txt",
+    "WV": "data_processing/hnn_process/embeddings/python/python_word_vocab_final.pkl",
+    "WORD": "data_processing/hnn_process/embeddings/python/python_word_dict_final.pkl",
+    "STAQC_NEW": "data_processing/hnn_process/ulabel_data/staqc/python_staqc_unlabeled_data.txt",
+    "STAQC_DICT": "data_processing/hnn_process/ulabel_data/staqc/python_word_dict.txt",
+    "LARGE_NEW": "data_processing/hnn_process/ulabel_data/large_corpus/multiple/python_large_multiple_unlabeled.txt",
+    "LARGE_DICT": "data_processing/hnn_process/ulabel_data/large_corpus/python_word_dict.txt",
+    "WV_SAVE": "data_processing/hnn_process/ulabel_data/python_word_vocab_final.pkl",
+    "WORD_SAVE": "data_processing/hnn_process/ulabel_data/python_word_dict.txt",
+    "STAQC_F": "data_processing/hnn_process/ulabel_data/staqc/seri_python_staqc_unlabeled_data.pkl",
+    "LARGE_F": "data_processing/hnn_process/ulabel_data/large_corpus/multiple/seri_python_large_multiple_unlabeled.pkl",
+}
+SQL_PATHS = {
+    "SQL_WORD": "data_processing/hnn_process/data/word_dict/sql_word_vocab_dict.txt",
+    "WV": "data_processing/hnn_process/embeddings/sql/sql_word_vocab_final.pkl",
+    "WORD": "data_processing/hnn_process/embeddings/sql/sql_word_dict_final.pkl",
+    "STAQC_NEW": "data_processing/hnn_process/ulabel_data/staqc/sql_staqc_unlabeled_data.txt",
+    "STAQC_DICT": "data_processing/hnn_process/ulabel_data/staqc/sql_word_dict.txt",
+    "LARGE_NEW": "data_processing/hnn_process/ulabel_data/large_corpus/multiple/sql_large_multiple_unlabeled.txt",
+    "LARGE_DICT": "data_processing/hnn_process/ulabel_data/large_corpus/sql_word_dict.txt",
+    "WV_SAVE": "data_processing/hnn_process/ulabel_data/sql_word_vocab_final.pkl",
+    "WORD_SAVE": "data_processing/hnn_process/ulabel_data/sql_word_dict_final.pkl",
+    "STAQC_F": "data_processing/hnn_process/ulabel_data/staqc/seri_sql_staqc_unlabeled_data.pkl",
+    "LARGE_F": "data_processing/hnn_process/ulabel_data/large_corpus/multiple/seri_ql_large_multiple_unlabeled.pkl",
+}
+PATHS = {
+    "PS": "data_processing/hnn_process/embeddings/10_10/python_struc2vec1/data/python_struc2vec.txt",
+    "PS_BIN": "data_processing/hnn_process/embeddings/10_10/python_struc2vec.bin",
+    "SQL": "data_processing/hnn_process/embeddings/10_8_embeddings/sql_struc2vec.txt",
+    "SQL_BIN": "data_processing/hnn_process/embeddings/10_8_embeddings/sql_struc2vec.bin",
+    "LARGE_SINGLE": "data_processing/hnn_process/ulabel_data/large_corpus/single/sql_large_single_label.txt",
+}
 
 
-
-#python解析
-def multipro_python_query(data_list):
-    return [python_query_parse(line) for line in data_list]
-
-def multipro_python_code(data_list):
-    return [python_code_parse(line) for line in data_list]
-
-def multipro_python_context(data_list):
-    result = []
-    for line in data_list:
-        if (line == '-10000'):
-            result.append(['-10000'])
+class MultiPro:
+    def query(self, data_list: list, lang: str):
+        if lang == "python":
+            return [pythonQueryParse(line) for line in data_list]
+        elif lang == "sql":
+            return [sqlangQueryParse(line) for line in data_list]
         else:
-            result.append(python_context_parse(line))
-    return result
+            raise ValueError("lang must be python or sql")
 
-
-#sql解析
-def multipro_sqlang_query(data_list):
-    return [sqlang_query_parse(line) for line in data_list]
-
-def multipro_sqlang_code(data_list):
-    return [sqlang_code_parse(line) for line in data_list]
-
-def multipro_sqlang_context(data_list):
-    result = []
-    for line in data_list:
-        if (line == '-10000'):
-            result.append(['-10000'])
+    def code(self, data_list: list, lang: str):
+        if lang == "python":
+            return [pythonCodeParse(line) for line in data_list]
+        elif lang == "sql":
+            return [sqlangCodeParse(line) for line in data_list]
         else:
-            result.append(sqlang_context_parse(line))
-    return result
+            raise ValueError("lang must be python or sql")
+
+    def context(self, data_list: list, lang: str):
+        if lang == "python":
+            return [
+                line if line == "-10000" else pythonContextParse(line)
+                for line in data_list
+            ]
+        elif lang == "sql":
+            return [
+                line if line == "-10000" else sqlangContextParse(line)
+                for line in data_list
+            ]
+        else:
+            raise ValueError("lang must be python or sql")
 
 
-def parse_python(python_list,split_num):
+def parse(lang_type: str, data: list):
+    def dataProcess(data: list, lang_type: str, data_type: str):
+        """
+        内部函数，对于4类数据进行处理
+        :param data:待处理数据
+        :param lang_type:语言类型,可选 'python','sql'
+        :param data_type:数据类型,可选 'context','query','code'
+        """
+        if lang_type != "python" and lang_type != "sql":
+            raise Exception("lang_type Error")
+        multiPro = MultiPro()
+        data_split_list = [
+            data[i : i + SPLIT_NUM] for i in range(0, len(data), SPLIT_NUM)
+        ]
+        pool = ThreadPool(10)
+        if data_type == "context":
+            data_list = pool.map(multiPro.context(data_split_list, lang_type))
+        elif data_type == "query":
+            data_list = pool.map(multiPro.query(data_split_list, lang_type))
+        elif data_type == "code":
+            data_list = pool.map(multiPro.code(data_split_list, lang_type))
+        else:
+            raise Exception("data_type Error")
+        pool.close()
+        pool.join()
+        return data_list
 
-    acont1_data =  [i[1][0][0] for i in python_list]
+    if lang_type != "python" and lang_type != "sql":
+        raise "type error"
 
-    acont1_split_list = [acont1_data[i:i + split_num] for i in range(0, len(acont1_data), split_num)]
-    pool = ThreadPool(10)
-    acont1_list = pool.map(multipro_python_context, acont1_split_list)
-    pool.close()
-    pool.join()
-    acont1_cut = []
-    for p in acont1_list:
-        acont1_cut += p
-    print('acont1条数：%d' % len(acont1_cut))
+    acont1_data = [i[1][0][0] for i in data]
+    acont2_data = [i[1][1][0] for i in data]
+    query_data = [i[3][0] for i in data]
+    code_data = [i[2][0][0] for i in data]
 
-    acont2_data = [i[1][1][0] for i in python_list]
+    acont1_cut = dataProcess(acont1_data, lang_type, "context")
+    acont2_cut = dataProcess(acont2_data, lang_type, "context")
+    query_cut = dataProcess(query_data, lang_type, "query")
+    code_cut = dataProcess(code_data, lang_type, "code")
+    qids = [i[0] for i in data]
+    print("acont1:%d" % len(acont1_cut))
+    print("acont2:%d" % len(acont2_cut))
+    print("query:%d" % len(query_cut))
+    print("code:%d" % len(code_cut))
+    print("qids:%d" % len(qids), "qids[0]:", qids[0])
 
-    acont2_split_list = [acont2_data[i:i + split_num] for i in range(0, len(acont2_data), split_num)]
-    pool = ThreadPool(10)
-    acont2_list = pool.map(multipro_python_context, acont2_split_list)
-    pool.close()
-    pool.join()
-    acont2_cut = []
-    for p in acont2_list:
-        acont2_cut += p
-    print('acont2条数：%d' % len(acont2_cut))
-
-
-
-    query_data = [i[3][0] for i in python_list]
-
-    query_split_list = [query_data[i:i + split_num] for i in range(0, len(query_data), split_num)]
-    pool = ThreadPool(10)
-    query_list = pool.map(multipro_python_query, query_split_list)
-    pool.close()
-    pool.join()
-    query_cut = []
-    for p in query_list:
-        query_cut += p
-    print('query条数：%d' % len(query_cut))
-
-    code_data = [i[2][0][0] for i in python_list]
-
-    code_split_list = [code_data[i:i + split_num] for i in range(0, len(code_data), split_num)]
-    pool = ThreadPool(10)
-    code_list = pool.map(multipro_python_code, code_split_list)
-    pool.close()
-    pool.join()
-    code_cut = []
-    for p in code_list:
-        code_cut += p
-    print('code条数：%d' % len(code_cut))
-
-    qids = [i[0] for i in python_list]
-    print(qids[0])
-    print(len(qids))
-
-    return acont1_cut,acont2_cut,query_cut,code_cut,qids
+    return acont1_cut, acont2_cut, query_cut, code_cut, qids
 
 
-def parse_sqlang(sqlang_list,split_num):
+if __name__ == "__main__":
+    """测试用"""
+    lang_type = "python"
+    if lang_type == "python":
+        source_path = PYTHON_PATHS["LARGE_DICT"]
+        save_path = PYTHON_PATHS["LARGE_NEW"]
+    elif lang_type == "sql":
+        source_path = SQL_PATHS["LARGE_DICT"]
+        save_path = SQL_PATHS["LARGE_NEW"]
+    else:
+        raise "lang_type error"
 
-    acont1_data =  [i[1][0][0] for i in sqlang_list]
-
-    acont1_split_list = [acont1_data[i:i + split_num] for i in range(0, len(acont1_data), split_num)]
-    pool = ThreadPool(10)
-    acont1_list = pool.map(multipro_sqlang_context, acont1_split_list)
-    pool.close()
-    pool.join()
-    acont1_cut = []
-    for p in acont1_list:
-        acont1_cut += p
-    print('acont1条数：%d' % len(acont1_cut))
-
-    acont2_data = [i[1][1][0] for i in sqlang_list]
-
-    acont2_split_list = [acont2_data[i:i + split_num] for i in range(0, len(acont2_data), split_num)]
-    pool = ThreadPool(10)
-    acont2_list = pool.map(multipro_sqlang_context, acont2_split_list)
-    pool.close()
-    pool.join()
-    acont2_cut = []
-    for p in acont2_list:
-        acont2_cut += p
-    print('acont2条数：%d' % len(acont2_cut))
-
-    query_data = [i[3][0] for i in sqlang_list]
-
-    query_split_list = [query_data[i:i + split_num] for i in range(0, len(query_data), split_num)]
-    pool = ThreadPool(10)
-    query_list = pool.map(multipro_sqlang_query, query_split_list)
-    pool.close()
-    pool.join()
-    query_cut = []
-    for p in query_list:
-        query_cut += p
-    print('query条数：%d' % len(query_cut))
-
-    code_data = [i[2][0][0] for i in sqlang_list]
-
-    code_split_list = [code_data[i:i + split_num] for i in range(0, len(code_data), split_num)]
-    pool = ThreadPool(10)
-    code_list = pool.map(multipro_sqlang_code, code_split_list)
-    pool.close()
-    pool.join()
-    code_cut = []
-    for p in code_list:
-        code_cut += p
-    print('code条数：%d' % len(code_cut))
-    qids = [i[0] for i in sqlang_list]
-
-    return acont1_cut ,acont2_cut,query_cut,code_cut,qids
-
-
-
-def main(lang_type,split_num,source_path,save_path):
-    total_data = []
-    with open(source_path, "rb") as f:
-        #  存储为字典 有序
-        corpus_lis  = pickle.load(f) #pickle
-
-        #corpus_lis = eval(f.read()) #txt
-
-        # [(id, index),[[si]，[si+1]] 文本块，[[c]] 代码，[q] 查询, [qcont] 查询上下文, 块长度，标签]
-
-        if lang_type=='python':
-
-            parse_acont1, parse_acont2,parse_query, parse_code,qids  = parse_python(corpus_lis,split_num)
-            total_data.extend(
-                [
-                    qids[i],
-                    [parse_acont1[i], parse_acont2[i]],
-                    [parse_code[i]],
-                    parse_query[i],
-                ]
-                for i in range(0, len(qids))
-            )
-        if lang_type == 'sql':
-
-            parse_acont1,parse_acont2,parse_query, parse_code,qids = parse_sqlang(corpus_lis, split_num)
-            total_data.extend(
-                [
-                    qids[i],
-                    [parse_acont1[i], parse_acont2[i]],
-                    [parse_code[i]],
-                    parse_query[i],
-                ]
-                for i in range(0, len(qids))
-            )
+    with open(source_path, "rb") as f:  # 存储为字典 有序
+        corpus_lis = pickle.load(f)  # pickle
+        parse_acont1, parse_acont2, parse_query, parse_code, qids = parse(
+            lang_type, corpus_lis
+        )
+        total_data = [
+            [
+                qids[i],
+                [parse_acont1[i], parse_acont2[i]],
+                [parse_code[i]],
+                parse_query[i],
+            ]
+            for i in range(len(qids))
+        ]
     with open(save_path, "w") as f:
         f.write(str(total_data))
-
-
-
-
-
-python_type= 'python'
-sqlang_type ='sql'
-
-words_top = 100
-
-split_num = 1000
-def test(path1,path2):
-    with open(path1, "rb") as f:
-        #  存储为字典 有序
-        corpus_lis1  = pickle.load(f) #pickle
-    with open(path2, "rb") as f:
-        corpus_lis2 = eval(f.read()) #txt
-
-    print(corpus_lis1[10])
-    print(corpus_lis2[10])
-if __name__ == '__main__':
-    staqc_python_path = '../hnn_process/ulabel_data/python_staqc_qid2index_blocks_unlabeled.txt'
-    staqc_python_save ='../hnn_process/ulabel_data/staqc/python_staqc_unlabled_data.txt'
-
-    staqc_sql_path = '../hnn_process/ulabel_data/sql_staqc_qid2index_blocks_unlabeled.txt'
-    staqc_sql_save = '../hnn_process/ulabel_data/staqc/sql_staqc_unlabled_data.txt'
-
-    #main(sqlang_type,split_num,staqc_sql_path,staqc_sql_save)
-    #main(python_type, split_num, staqc_python_path, staqc_python_save)
-
-    large_python_path='../hnn_process/ulabel_data/large_corpus/multiple/python_large_multiple.pickle'
-    large_python_save='../hnn_process/ulabel_data/large_corpus/multiple/python_large_multiple_unlable.txt'
-
-
-    large_sql_path='../hnn_process/ulabel_data/large_corpus/multiple/sql_large_multiple.pickle'
-    large_sql_save='../hnn_process/ulabel_data/large_corpus/multiple/sql_large_multiple_unlable.txt'
-    #main(sqlang_type, split_num, large_sql_path, large_sql_save)
-    main(python_type, split_num, large_python_path, large_python_save)
