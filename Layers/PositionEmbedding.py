@@ -3,11 +3,11 @@ from keras.layers import Layer
 import tensorflow as tf
 
 
-class Position_Embedding(Layer):
+class PositionEmbedding(Layer):
     def __init__(self, size=None, mode="sum", **kwargs):
         self.size = size  # 必须为偶数
         self.mode = mode
-        super(Position_Embedding, self).__init__(**kwargs)
+        super(PositionEmbedding, self).__init__(**kwargs)
 
     def call(self, x):  # 上一层一般就是embedding层，batch_size,seq_len,model_dim
         if self.size is None or self.mode == "sum":
