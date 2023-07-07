@@ -44,8 +44,8 @@ class CodeMF:
         self.nb_classes = 2
         self.dropout = None
 
-        self.model_params = config.get('model_params', dict())
-        self.data_params = config.get('data_params', dict())
+        self.model_params = config.get('model_params', {})
+        self.data_params = config.get('data_params', {})
         self.text_embbeding = pickle.load(open(self.data_params['text_pretrain_emb_path'], "rb"), encoding='iso-8859-1')
         self.code_embbeding = pickle.load(open(self.data_params['code_pretrain_emb_path'], "rb"), encoding='iso-8859-1')
         # create a model path to store model info
@@ -168,11 +168,6 @@ class CodeMF:
     def fit(self, x, y, **kwargs):
         assert self.class_model is not None, 'Must compile the model before fitting data'
         return self.class_model.fit(x, to_categorical(y), **kwargs)
-        '''
-        assert self.train_model is not None, 'Must compile the model before fitting data'
-        y = np.zeros(shape=x[0].shape[:1], dtype=np.float32)
-        return self.train_model.fit(x, y, **kwargs)
-        '''
 
     def predict(self, x, **kwargs):
         return self.class_model.predict(x, **kwargs)
@@ -216,10 +211,7 @@ class CodeMF:
 
     def example_loss(self, y_true, y_pred):
         crossent = tf.compat.v1.nn.softmax_cross_entropy_with_logits(logits=y_pred, labels=y_true)
-        # crossent = K.categorical_crossentropy(y_true, y_pred)
-        loss = tf.reduce_sum(crossent) / tf.cast(100, tf.float32)
-
-        return loss
+        return tf.reduce_sum(crossent) / tf.cast(100, tf.float32)
 
 
 '''

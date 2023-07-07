@@ -105,10 +105,7 @@ def repair_program_io(code):
         bool_after_Out = False
         for idx in range(len(lines_flags)):
             if lines_flags[idx] != 0:
-                if lines_flags[idx] == 2:
-                    bool_after_Out = True
-                else:
-                    bool_after_Out = False
+                bool_after_Out = lines_flags[idx] == 2
                 repaired_code += re.sub(patterns[lines_flags[idx] - 1], "", lines[idx]) + "\n"
 
                 if len(sub_block.strip()) and (idx > 0 and lines_flags[idx - 1] == 0):
@@ -158,17 +155,13 @@ def get_vars_heuristics(code):
         try:
             root = ast.parse(line)
         except:
-            # matching PATTERN_VAR_EQUAL
-            pattern_var_equal_matched = re.match(PATTERN_VAR_EQUAL, line)
-            if pattern_var_equal_matched:
+            if pattern_var_equal_matched := re.match(PATTERN_VAR_EQUAL, line):
                 match = pattern_var_equal_matched.group()[:-1]  # remove "="
-                varnames = varnames.union(set([_.strip() for _ in match.split(",")]))
+                varnames = varnames.union({_.strip() for _ in match.split(",")})
 
-            # matching PATTERN_VAR_FOR
-            pattern_var_for_matched = re.search(PATTERN_VAR_FOR, line)
-            if pattern_var_for_matched:
+            if pattern_var_for_matched := re.search(PATTERN_VAR_FOR, line):
                 match = pattern_var_for_matched.group()[3:-2]  # remove "for" and "in"
-                varnames = varnames.union(set([_.strip() for _ in match.split(",")]))
+                varnames = varnames.union({_.strip() for _ in match.split(",")})
 
         else:
             varnames = varnames.union(get_vars(root))
@@ -221,7 +214,9 @@ def PythonParser(code):
         posno = term[3][1] - 1
         if token.tok_name[term_type] in {"NUMBER", "STRING", "NEWLINE"}:
             tokenized_code.append(token.tok_name[term_type])
-        elif not token.tok_name[term_type] in {"COMMENT", "ENDMARKER"} and len(term[1].strip()):
+        elif token.tok_name[term_type] not in {"COMMENT", "ENDMARKER"} and len(
+            term[1].strip()
+        ):
             candidate = term[1].strip()
             if candidate not in varnames:
                 tokenized_code.append(candidate)

@@ -55,9 +55,7 @@ class ScaledDotProductAttention(Layer):
     def compute_mask(self, inputs, mask=None):
         if isinstance(mask, list):
             mask = mask[0]
-        if self.return_attention:
-            return [mask, None]
-        return mask
+        return [mask, None] if self.return_attention else mask
 
     def call(self, inputs, mask=None, **kwargs):
         if isinstance(inputs, list):
@@ -85,9 +83,7 @@ class ScaledDotProductAttention(Layer):
         #value = bs,seq_len,dim
         #v = bs,seq_len,dim
         v = K.batch_dot(self.attention, value)
-        if self.return_attention:
-            return [v, self.attention]
-        return v
+        return [v, self.attention] if self.return_attention else v
 
 
 
@@ -161,9 +157,7 @@ class MultiHeadAttention_(Layer):
         return input_shape
 
     def compute_mask(self, inputs, input_mask=None):
-        if isinstance(input_mask, list):
-            return input_mask[0]
-        return input_mask
+        return input_mask[0] if isinstance(input_mask, list) else input_mask
 
     def build(self, input_shape):
         if isinstance(input_shape, list):
@@ -178,7 +172,7 @@ class MultiHeadAttention_(Layer):
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             constraint=self.kernel_constraint,
-            name='%s_Wq' % self.name,
+            name=f'{self.name}_Wq',
         )
         if self.use_bias:
             self.bq = self.add_weight(
@@ -186,14 +180,14 @@ class MultiHeadAttention_(Layer):
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 constraint=self.bias_constraint,
-                name='%s_bq' % self.name,
+                name=f'{self.name}_bq',
             )
         self.Wk = self.add_weight(
             shape=(int(k[-1]), feature_dim),
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             constraint=self.kernel_constraint,
-            name='%s_Wk' % self.name,
+            name=f'{self.name}_Wk',
         )
         if self.use_bias:
             self.bk = self.add_weight(
@@ -201,14 +195,14 @@ class MultiHeadAttention_(Layer):
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 constraint=self.bias_constraint,
-                name='%s_bk' % self.name,
+                name=f'{self.name}_bk',
             )
         self.Wv = self.add_weight(
             shape=(int(v[-1]), feature_dim),
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             constraint=self.kernel_constraint,
-            name='%s_Wv' % self.name,
+            name=f'{self.name}_Wv',
         )
         if self.use_bias:
             self.bv = self.add_weight(
@@ -216,14 +210,14 @@ class MultiHeadAttention_(Layer):
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 constraint=self.bias_constraint,
-                name='%s_bv' % self.name,
+                name=f'{self.name}_bv',
             )
         self.Wo = self.add_weight(
             shape=(feature_dim, feature_dim),
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             constraint=self.kernel_constraint,
-            name='%s_Wo' % self.name,
+            name=f'{self.name}_Wo',
         )
         if self.use_bias:
             self.bo = self.add_weight(
@@ -231,7 +225,7 @@ class MultiHeadAttention_(Layer):
                 initializer=self.bias_initializer,
                 regularizer=self.bias_regularizer,
                 constraint=self.bias_constraint,
-                name='%s_bo' % self.name,
+                name=f'{self.name}_bo',
             )
         super(MultiHeadAttention_, self).build(input_shape)
 
@@ -291,8 +285,7 @@ class MultiHeadAttention_(Layer):
             k = self.activation(k)
             v = self.activation(v)
         scaled_dot_product_attention = ScaledDotProductAttention(
-            history_only=self.history_only,
-            name='%s-Attention' % self.name,
+            history_only=self.history_only, name=f'{self.name}-Attention'
         )
         y = scaled_dot_product_attention(
             inputs=[

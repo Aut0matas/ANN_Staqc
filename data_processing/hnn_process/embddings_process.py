@@ -103,42 +103,32 @@ def get_index(type,text,word_dict):
     if type == 'code':
         location.append(1)
         len_c = len(text)
-        if len_c+1 <350:
-            if len_c == 1 and text[0] == '-1000':
-                location.append(2)
-            else:
+        if len_c < 349:
+            if len_c != 1 or text[0] != '-1000':
                 for i in range(0, len_c):
-                    if word_dict.get(text[i]) != None:
-                        index = word_dict.get(text[i])
-                        location.append(index)
-                    else:
-                        index = word_dict.get('UNK')
-                        location.append(index)
-
-                location.append(2)
+                    index = (
+                        word_dict.get(text[i])
+                        if word_dict.get(text[i]) != None
+                        else word_dict.get('UNK')
+                    )
+                    location.append(index)
         else:
             for i in range(0, 348):
-                if word_dict.get(text[i]) != None:
-                    index = word_dict.get(text[i])
-                    location.append(index)
-                else:
+                if word_dict.get(text[i]) is None:
                     index = word_dict.get('UNK')
-                    location.append(index)
-            location.append(2)
+                else:
+                    index = word_dict.get(text[i])
+                location.append(index)
+        location.append(2)
+    elif len(text) == 0 or text[0] == '-10000':
+        location.append(0)
     else:
-        if len(text) == 0:
-            location.append(0)
-        elif text[0] == '-10000':
-            location.append(0)
-        else:
-            for i in range(0, len(text)):
-                if word_dict.get(text[i]) != None:
-                    index = word_dict.get(text[i])
-                    location.append(index)
-                else:
-                    index = word_dict.get('UNK')
-                    location.append(index)
-
+        for i in range(0, len(text)):
+            if word_dict.get(text[i]) != None:
+                index = word_dict.get(text[i])
+            else:
+                index = word_dict.get('UNK')
+            location.append(index)
     return location
 
 
@@ -156,6 +146,10 @@ def Serialization(word_dict_path,type_path,final_type_path):
     total_data = []
 
 
+    #block_length = corpus[i][4]
+    #label = corpus[i][5]
+    block_length = 4
+    label = 0
     for i in range(0, len(corpus)):
         qid = corpus[i][0]
 
@@ -168,24 +162,20 @@ def Serialization(word_dict_path,type_path,final_type_path):
         tokenized_code = get_index('code', corpus[i][2][0], word_dict) #staqc
         # query
         query_word_list = get_index('text',corpus[i][3],word_dict)
-        #block_length = corpus[i][4]
-        #label = corpus[i][5]
-        block_length = 4
-        label = 0
-        if(len(Si_word_list)>100):
+        if (len(Si_word_list)>100):
             Si_word_list = Si_word_list[:100]
         else:
-            for k in range(0, 100 - len(Si_word_list)):
+            for _ in range(0, 100 - len(Si_word_list)):
                 Si_word_list.append(0)
 
         if (len(Si1_word_list) > 100):
             Si1_word_list = Si1_word_list[:100]
         else:
-            for k in range(0, 100 - len(Si1_word_list)):
+            for _ in range(0, 100 - len(Si1_word_list)):
                 Si1_word_list.append(0)
 
         if (len(tokenized_code) < 350):
-            for k in range(0, 350 - len(tokenized_code)):
+            for _ in range(0, 350 - len(tokenized_code)):
                 tokenized_code.append(0)
         else:
             tokenized_code = tokenized_code[:350]
@@ -193,7 +183,7 @@ def Serialization(word_dict_path,type_path,final_type_path):
         if (len(query_word_list) > 25):
             query_word_list = query_word_list[:25]
         else:
-            for k in range(0, 25 - len(query_word_list)):
+            for _ in range(0, 25 - len(query_word_list)):
                 query_word_list.append(0)
 
         one_data = [qid, [Si_word_list, Si1_word_list], [tokenized_code], query_word_list, block_length, label]

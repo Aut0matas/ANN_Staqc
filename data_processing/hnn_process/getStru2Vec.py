@@ -33,12 +33,10 @@ from multiprocessing import Pool as ThreadPool
 
 #python解析
 def multipro_python_query(data_list):
-    result=[python_query_parse(line) for line in data_list]
-    return result
+    return [python_query_parse(line) for line in data_list]
 
 def multipro_python_code(data_list):
-    result = [python_code_parse(line) for line in data_list]
-    return result
+    return [python_code_parse(line) for line in data_list]
 
 def multipro_python_context(data_list):
     result = []
@@ -52,12 +50,10 @@ def multipro_python_context(data_list):
 
 #sql解析
 def multipro_sqlang_query(data_list):
-    result=[sqlang_query_parse(line) for line in data_list]
-    return result
+    return [sqlang_query_parse(line) for line in data_list]
 
 def multipro_sqlang_code(data_list):
-    result = [sqlang_code_parse(line) for line in data_list]
-    return result
+    return [sqlang_code_parse(line) for line in data_list]
 
 def multipro_sqlang_context(data_list):
     result = []
@@ -196,19 +192,29 @@ def main(lang_type,split_num,source_path,save_path):
         if lang_type=='python':
 
             parse_acont1, parse_acont2,parse_query, parse_code,qids  = parse_python(corpus_lis,split_num)
-            for i in range(0,len(qids)):
-                total_data.append([qids[i],[parse_acont1[i],parse_acont2[i]],[parse_code[i]],parse_query[i]])
-
+            total_data.extend(
+                [
+                    qids[i],
+                    [parse_acont1[i], parse_acont2[i]],
+                    [parse_code[i]],
+                    parse_query[i],
+                ]
+                for i in range(0, len(qids))
+            )
         if lang_type == 'sql':
 
             parse_acont1,parse_acont2,parse_query, parse_code,qids = parse_sqlang(corpus_lis, split_num)
-            for i in range(0,len(qids)):
-                total_data.append([qids[i],[parse_acont1[i],parse_acont2[i]],[parse_code[i]],parse_query[i]])
-
-
-    f = open(save_path, "w")
-    f.write(str(total_data))
-    f.close()
+            total_data.extend(
+                [
+                    qids[i],
+                    [parse_acont1[i], parse_acont2[i]],
+                    [parse_code[i]],
+                    parse_query[i],
+                ]
+                for i in range(0, len(qids))
+            )
+    with open(save_path, "w") as f:
+        f.write(str(total_data))
 
 
 

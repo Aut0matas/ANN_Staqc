@@ -21,7 +21,7 @@ class Position_Embedding(Layer):
         super(Position_Embedding, self).__init__(**kwargs)
 
     def call(self, x):  # 上一层一般就是embedding层，batch_size,seq_len,model_dim
-        if (self.size == None) or (self.mode == 'sum'):
+        if self.size is None or self.mode == 'sum':
             self.size = int(x.shape[-1])  # d_model的长度,比如512
         batch_size, seq_len = K.shape(x)[0], K.shape(x)[1]  #
         ## K.arange(self.size / 2, dtype='float32' ), 生成0~256，间隔1,即公式中的i
@@ -50,10 +50,10 @@ class Position_Embedding(Layer):
             return K.concatenate([position_ij, x], 2)
 
     def compute_output_shape(self, input_shape):
-        if self.mode == 'sum':
-            return input_shape
-        elif self.mode == 'concat':
+        if self.mode == 'concat':
             return (input_shape[0], input_shape[1], input_shape[2] + self.size)
+        elif self.mode == 'sum':
+            return input_shape
 
 
 '''

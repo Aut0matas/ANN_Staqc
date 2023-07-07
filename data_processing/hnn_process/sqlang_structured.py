@@ -44,15 +44,14 @@ scanner = re.Scanner([(r"\[[^\]]*\]", lambda scanner, token: token), (r"\+", lam
 
 #---------------------子函数1：代码的规则--------------------
 def tokenizeRegex(s):
-    results = scanner.scan(s)[0]
-    return results
+    return scanner.scan(s)[0]
 
 #---------------------子函数2：代码的规则--------------------
 class SqlangParser():
     @staticmethod
     def sanitizeSql(sql):
         s = sql.strip().lower()
-        if not s[-1] == ";":
+        if s[-1] != ";":
             s += ';'
         s = re.sub(r'\(', r' ( ', s)
         s = re.sub(r'\)', r' ) ', s)
@@ -68,10 +67,7 @@ class SqlangParser():
             for c in tok.tokens:
                 self.parseStrings(c)
         elif tok.ttype == STRING:
-            if self.regex:
-                tok.value = ' '.join(tokenizeRegex(tok.value))
-            else:
-                tok.value = "CODSTR"
+            tok.value = ' '.join(tokenizeRegex(tok.value)) if self.regex else "CODSTR"
 
     def renameIdentifiers(self, tok):
         if isinstance(tok, sqlparse.sql.TokenList):
@@ -100,7 +96,7 @@ class SqlangParser():
             tok.value = "CODHEX"
 
     def __hash__(self):
-        return hash(tuple([str(x) for x in self.tokensWithBlanks]))
+        return hash(tuple(str(x) for x in self.tokensWithBlanks))
 
     def __init__(self, sql, regex=False, rename=True):
 
@@ -144,11 +140,7 @@ class SqlangParser():
 
     def removeWhitespaces(self, tok):
         if isinstance(tok, sqlparse.sql.TokenList):
-            tmpChildren = []
-            for c in tok.tokens:
-                if not c.is_whitespace:
-                    tmpChildren.append(c)
-
+            tmpChildren = [c for c in tok.tokens if not c.is_whitespace]
             tok.tokens = tmpChildren
             for c in tok.tokens:
                 self.removeWhitespaces(c)
@@ -175,13 +167,27 @@ class SqlangParser():
                 self.identifyLiterals(tok)
             elif (tok.ttype == sqlparse.tokens.Keyword or str(tok) == "select"):
                 tok.ttype = KEYWORD
-            elif (tok.ttype == sqlparse.tokens.Number.Integer or tok.ttype == sqlparse.tokens.Literal.Number.Integer):
+            elif tok.ttype in [
+                sqlparse.tokens.Number.Integer,
+                sqlparse.tokens.Literal.Number.Integer,
+            ]:
                 tok.ttype = INTEGER
-            elif (tok.ttype == sqlparse.tokens.Number.Hexadecimal or tok.ttype == sqlparse.tokens.Literal.Number.Hexadecimal):
+            elif tok.ttype in [
+                sqlparse.tokens.Number.Hexadecimal,
+                sqlparse.tokens.Literal.Number.Hexadecimal,
+            ]:
                 tok.ttype = HEX
-            elif (tok.ttype == sqlparse.tokens.Number.Float or tok.ttype == sqlparse.tokens.Literal.Number.Float):
+            elif tok.ttype in [
+                sqlparse.tokens.Number.Float,
+                sqlparse.tokens.Literal.Number.Float,
+            ]:
                 tok.ttype = FLOAT
-            elif (tok.ttype == sqlparse.tokens.String.Symbol or tok.ttype == sqlparse.tokens.String.Single or tok.ttype == sqlparse.tokens.Literal.String.Single or tok.ttype == sqlparse.tokens.Literal.String.Symbol):
+            elif tok.ttype in [
+                sqlparse.tokens.String.Symbol,
+                sqlparse.tokens.String.Single,
+                sqlparse.tokens.Literal.String.Single,
+                sqlparse.tokens.Literal.String.Symbol,
+            ]:
                 tok.ttype = STRING
             elif (tok.ttype == sqlparse.tokens.Wildcard):
                 tok.ttype = WILDCARD
@@ -213,7 +219,10 @@ class SqlangParser():
             elif (str(tok) == "from" and tok.ttype == sqlparse.tokens.Keyword):
                 self.tableStack[-1] = True
 
-            elif ((str(tok) == "where" or str(tok) == "on" or str(tok) == "group" or str(tok) == "order" or str(tok) == "union") and tok.ttype == sqlparse.tokens.Keyword):
+            elif (
+                str(tok) in {"where", "on", "group", "order", "union"}
+                and tok.ttype == sqlparse.tokens.Keyword
+            ):
                 self.tableStack[-1] = False
 
             if isinstance(tok, sqlparse.sql.TokenList):
