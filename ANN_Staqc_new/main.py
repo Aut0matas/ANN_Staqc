@@ -44,14 +44,18 @@ random.seed(seed)
 class StandoneCode:
     # dict.get(）：返回指定键的值，如果键不在字典中返回默认值 None 或者设置的默认值
     def __init__(self, conf=None):
-        self.conf = dict() if conf is None else conf
+        self.conf = {} if conf is None else conf
         self._buckets = conf.get('buckets', [(2, 10, 22, 72), (2, 20, 34, 102), (2, 40, 34, 202), (2, 100, 34, 302)])
-        self._buckets_text_max = (max([i for i, _, _, _ in self._buckets]), max([j for _, j, _, _ in self._buckets]))
-        self._buckets_code_max = (max([i for _, _, i, _ in self._buckets]), max([j for _, _, _, j in self._buckets]))
+        self._buckets_text_max = max(i for i, _, _, _ in self._buckets), max(
+            j for _, j, _, _ in self._buckets
+        )
+        self._buckets_code_max = max(i for _, _, i, _ in self._buckets), max(
+            j for _, _, _, j in self._buckets
+        )
         self.path = self.conf.get('workdir', './data/')
-        self.train_params = conf.get('training_params', dict())
-        self.data_params = conf.get('data_params', dict())
-        self.model_params = conf.get('model_params', dict())
+        self.train_params = conf.get('training_params', {})
+        self.data_params = conf.get('data_params', {})
+        self.model_params = conf.get('model_params', {})
         self._eval_sets = None
 
     def load_pickle(self, filename):
@@ -69,8 +73,10 @@ class StandoneCode:
 
     ##### Model Loading / saving #####
     def save_model_epoch(self, model, epoch,d12,d3,d4,d5,r):
-        if not os.path.exists(self.path + 'models/' + self.model_params['model_name'] + '/'):
-            os.makedirs(self.path + 'models/' + self.model_params['model_name'] + '/')
+        if not os.path.exists(
+            f'{self.path}models/' + self.model_params['model_name'] + '/'
+        ):
+            os.makedirs(f'{self.path}models/' + self.model_params['model_name'] + '/')
         model.save("{}models/{}/pysparams:d12={}_d3={}_d4={}_d5={}_r={}_epo={:d}_class.h5".format(self.path, self.model_params['model_name'], d12,d3,d4,d5,r,epoch),overwrite=True)
 
     def load_model_epoch(self, model, epoch, d12, d3, d4,d5, r):
@@ -145,14 +151,13 @@ class StandoneCode:
         previous_dev_f1 = float(0)
         previous_test_f1 = float(0)
         epoch_train_losses, epoch_train_precision, epoch_train_recall, \
-        epoch_train_f1, epoch_train_accuracy = [], [], [], [], []
+            epoch_train_f1, epoch_train_accuracy = [], [], [], [], []
         epoch_dev_losses, epoch_dev_precision, epoch_dev_recall, \
-        epoch_dev_f1, epoch_dev_accuracy = [], [], [], [], []
+            epoch_dev_f1, epoch_dev_accuracy = [], [], [], [], []
         epoch_test_losses, epoch_test_precision, epoch_test_recall, \
-        epoch_test_f1, epoch_test_accuracy = [], [], [], [], []
+            epoch_test_f1, epoch_test_accuracy = [], [], [], [], []
         save_i = []
         save_i_test = []
-        indicator = []
         indicator_1 = []
         indicator_2 = []
         final = 150
@@ -169,7 +174,7 @@ class StandoneCode:
             if hist.history['loss'][0] < val_loss['loss']:
                 val_loss = {'loss': hist.history['loss'][0], 'epoch': i}
 
-            print('Best: Loss = {}, Epoch = {}'.format(val_loss['loss'], val_loss['epoch']))
+            print(f"Best: Loss = {val_loss['loss']}, Epoch = {val_loss['epoch']}")
             # loss precison,recall,f1,accuracy
 
             train_acc, train_f1, train_recall, train_precison, train_loss = self.valid(model,
@@ -215,10 +220,9 @@ class StandoneCode:
                 save_i_test.append(i + 1000)
                 self.save_model_epoch(model, i + 1000, d12, d3, d4, d5, r)
             self.del_pre_model(save_i_test, d12, d3, d4, d5, r)
-         
-        
-        indicator.append(indicator_1)
-        indicator.append(indicator_2)
+
+
+        indicator = [indicator_1, indicator_2]
         max_idx = np.argmax(epoch_dev_f1)
         max_idx_t = np.argmax(epoch_test_f1)
         print("最大dev f1由 %d-th epoch: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % (
@@ -232,41 +236,36 @@ class StandoneCode:
         # ================================================记录:
 
         filename = 'adjust_python_15.txt'
-        #filename = 'test_no_sa.txt'
-        f = open(filename, 'a+')
-        # params = "记录:dropout1=%.3f,dropout2=%.3f,dropout3=%.3f,re=%.3f" % (d1,d2,d3,r)
-        params = "记录:dropout12=%.3f,dropout3=%.3f,dropout4=%.3f,dropout5=%.3f,num =%.5f" % (d12, d3, d4, d5, r)
-        loss = "结束epoch=%d" % (final) + " " + 'loss:' + '自定义,'  # 交叉熵
-        f.writelines(loss)
-        f.writelines('\n')
-        f.writelines(params)
-        f.writelines('\n')
-        f.writelines("最大dev f1由 %d-th epoch: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % (
-            max_idx, epoch_dev_precision[max_idx], epoch_dev_recall[max_idx], epoch_dev_f1[max_idx],
-            epoch_dev_accuracy[max_idx]))
-        f.writelines('\n')
-        f.writelines("相应的测试性能: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % (
-            epoch_test_precision[max_idx], epoch_test_recall[max_idx], epoch_test_f1[max_idx],
-            epoch_test_accuracy[max_idx]))
-        f.writelines('\n')
-        f.writelines("最大test f1由 %d-th epoch:f1: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % (max_idx_t, epoch_test_precision[ max_idx_t],epoch_test_recall[max_idx_t],epoch_test_f1[max_idx_t],epoch_test_accuracy[max_idx_t]))
+        with open(filename, 'a+') as f:
+            # params = "记录:dropout1=%.3f,dropout2=%.3f,dropout3=%.3f,re=%.3f" % (d1,d2,d3,r)
+            params = "记录:dropout12=%.3f,dropout3=%.3f,dropout4=%.3f,dropout5=%.3f,num =%.5f" % (d12, d3, d4, d5, r)
+            loss = "结束epoch=%d" % (final) + " " + 'loss:' + '自定义,'  # 交叉熵
+            f.writelines(loss)
+            f.writelines('\n')
+            f.writelines(params)
+            f.writelines('\n')
+            f.writelines("最大dev f1由 %d-th epoch: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % (
+                max_idx, epoch_dev_precision[max_idx], epoch_dev_recall[max_idx], epoch_dev_f1[max_idx],
+                epoch_dev_accuracy[max_idx]))
+            f.writelines('\n')
+            f.writelines("相应的测试性能: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % (
+                epoch_test_precision[max_idx], epoch_test_recall[max_idx], epoch_test_f1[max_idx],
+                epoch_test_accuracy[max_idx]))
+            f.writelines('\n')
+            f.writelines("最大test f1由 %d-th epoch:f1: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % (max_idx_t, epoch_test_precision[ max_idx_t],epoch_test_recall[max_idx_t],epoch_test_f1[max_idx_t],epoch_test_accuracy[max_idx_t]))
 
-        #f.writelines("验证集-测试集：: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % ((epoch_test_precision[max_idx] - 0.872), (epoch_test_recall[max_idx] - 0.903),(epoch_test_f1[max_idx] - 0.888),(epoch_test_accuracy[max_idx] - 0.867)))
-        #f.writelines('\n')
-        #f.writelines("测试集-测试集：: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % ((epoch_test_precision[max_idx_t]-0.872), (epoch_test_recall[max_idx_t]-0.903), (epoch_test_f1[max_idx_t]-0.888),(epoch_test_accuracy[max_idx_t]-0.867)))
-        f.writelines('\n')
-        f.writelines("*" * 10)
-        f.writelines('\n')
-        f.writelines("                                             ")
-        f.writelines('\n')
-        f.close()
-
+            #f.writelines("验证集-测试集：: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % ((epoch_test_precision[max_idx] - 0.872), (epoch_test_recall[max_idx] - 0.903),(epoch_test_f1[max_idx] - 0.888),(epoch_test_accuracy[max_idx] - 0.867)))
+            #f.writelines('\n')
+            #f.writelines("测试集-测试集：: precision=%.3f, recall=%.3f, f1=%.3f, accuracy=%.3f" % ((epoch_test_precision[max_idx_t]-0.872), (epoch_test_recall[max_idx_t]-0.903), (epoch_test_f1[max_idx_t]-0.888),(epoch_test_accuracy[max_idx_t]-0.867)))
+            f.writelines('\n')
+            f.writelines("*" * 10)
+            f.writelines('\n')
+            f.writelines("                                             ")
+            f.writelines('\n')
         indicator_txt = 'final_test.txt'
-        #indicator_txt = 'test_in_no_Sa.txt'
-        f = open(indicator_txt, 'a+')
-        f.writelines("\nre\n")
-        f.write(str(indicator))
-        f.close()
+        with open(indicator_txt, 'a+') as f:
+            f.writelines("\nre\n")
+            f.write(str(indicator))
         sys.stdout.flush()
 
 

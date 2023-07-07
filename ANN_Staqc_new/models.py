@@ -50,8 +50,8 @@ class CodeMF:
         self.nb_classes = 2
         self.dropout = None
 
-        self.model_params = config.get('model_params', dict())
-        self.data_params = config.get('data_params', dict())
+        self.model_params = config.get('model_params', {})
+        self.data_params = config.get('data_params', {})
         self.text_embbeding = pickle.load(open(self.data_params['text_pretrain_emb_path'], "rb"), encoding='iso-8859-1')
         self.code_embbeding = pickle.load(open(self.data_params['code_pretrain_emb_path'], "rb"), encoding='iso-8859-1')
         # create a model path to store model info

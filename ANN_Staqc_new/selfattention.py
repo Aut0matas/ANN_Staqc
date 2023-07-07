@@ -21,15 +21,19 @@ class selfattention(Layer):
 
     def build(self, input_shape):
         #(120,150)
-        self.Ws1 = self.add_weight(name='Ws1'+self.scope,
-                                  shape=(input_shape[2],self.da),
-                                  initializer='glorot_uniform',
-                                  trainable=True)
+        self.Ws1 = self.add_weight(
+            name=f'Ws1{self.scope}',
+            shape=(input_shape[2], self.da),
+            initializer='glorot_uniform',
+            trainable=True,
+        )
         #(3,120)
-        self.Ws2 = self.add_weight(name='Ws2'+self.scope,
-                                  shape=(self.da,self.r),
-                                  initializer='glorot_uniform',
-                                  trainable=True)
+        self.Ws2 = self.add_weight(
+            name=f'Ws2{self.scope}',
+            shape=(self.da, self.r),
+            initializer='glorot_uniform',
+            trainable=True,
+        )
     def call(self, inputs, **kwargs):
 
         #inputs:(100,4,150)

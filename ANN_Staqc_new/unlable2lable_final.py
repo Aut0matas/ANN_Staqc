@@ -41,14 +41,18 @@ random.seed(seed)
 class StandoneCode:
     # dict.get(）：返回指定键的值，如果键不在字典中返回默认值 None 或者设置的默认值
     def __init__(self, conf=None):
-        self.conf = dict() if conf is None else conf
+        self.conf = {} if conf is None else conf
         self._buckets = conf.get('buckets', [(2, 10, 22, 72), (2, 20, 34, 102), (2, 40, 34, 202), (2, 100, 34, 302)])
-        self._buckets_text_max = (max([i for i, _, _, _ in self._buckets]), max([j for _, j, _, _ in self._buckets]))
-        self._buckets_code_max = (max([i for _, _, i, _ in self._buckets]), max([j for _, _, _, j in self._buckets]))
+        self._buckets_text_max = max(i for i, _, _, _ in self._buckets), max(
+            j for _, j, _, _ in self._buckets
+        )
+        self._buckets_code_max = max(i for _, _, i, _ in self._buckets), max(
+            j for _, _, _, j in self._buckets
+        )
         self.path = self.conf.get('workdir', './data/')
-        self.train_params = conf.get('training_params', dict())
-        self.data_params = conf.get('data_params', dict())
-        self.model_params = conf.get('model_params', dict())
+        self.train_params = conf.get('training_params', {})
+        self.data_params = conf.get('data_params', {})
+        self.model_params = conf.get('model_params', {})
         self._eval_sets = None
 
     def load_pickle(self, filename):
@@ -66,8 +70,10 @@ class StandoneCode:
 
     ##### Model Loading / saving #####
     def save_model_epoch(self, model, epoch,d12,d3,d4,d5,r):
-        if not os.path.exists(self.path + 'models/' + self.model_params['model_name'] + '/'):
-            os.makedirs(self.path + 'models/' + self.model_params['model_name'] + '/')
+        if not os.path.exists(
+            f'{self.path}models/' + self.model_params['model_name'] + '/'
+        ):
+            os.makedirs(f'{self.path}models/' + self.model_params['model_name'] + '/')
         model.save("{}models/{}/pysparams:d12={}_d3={}_d4={}_d5={}_r={}_epo={:d}_class.h5".format(self.path, self.model_params['model_name'], d12,d3,d4,d5,r,epoch),overwrite=True)
 
     def load_model_epoch(self, model, epoch, d12, d3, d4,d5, r):
@@ -156,17 +162,14 @@ class StandoneCode:
         return acc, f1, recall, precision, loss
     #给语料打codemf标签
     def u2l_codemf(self, model, path, save_path):
-        total_label = []
         text_S1, text_S2, code, queries, labels, ids1 = self.get_data(path)
         labelpred = model.predict([np.array(text_S1), np.array(text_S2), np.array(code), np.array(queries)],
                            batch_size=100)
         labelpred1 = np.argmax(labelpred, axis=1)
 
-        total_label.append(ids1)
-        total_label.append(labelpred1.tolist())
-        f = open(save_path, "w")
-        f.write(str(total_label))
-        f.close()
+        total_label = [ids1, labelpred1.tolist()]
+        with open(save_path, "w") as f:
+            f.write(str(total_label))
         print("codemf标签已打完")
     #给语料打textsa标签
     def u2l_textsa(self, model, path, save_path):
@@ -176,18 +179,14 @@ class StandoneCode:
         f.close()
 
         my_pre1 = pre[1]  # codemf_label
-        total_label = []
         text_S1, text_S2, code, queries, labels, ids1 = self.get_data(path)
         labelpred = model.predict([np.array(text_S1), np.array(text_S2), np.array(code), np.array(queries)],
                            batch_size=100)
         labelpred1 = np.argmax(labelpred, axis=1)
 
-        total_label.append(ids1)
-        total_label.append(my_pre1)
-        total_label.append(labelpred1.tolist())
-        f = open(save_path, "w")
-        f.write(str(total_label))
-        f.close()
+        total_label = [ids1, my_pre1, labelpred1.tolist()]
+        with open(save_path, "w") as f:
+            f.write(str(total_label))
         print("textsa标签已打完")
     #给语料打codesa标签
     def u2l_codesa(self, model, path, save_path):
@@ -199,19 +198,14 @@ class StandoneCode:
         my_pre1 = pre[1]  # codemf_label
         my_pre2 = pre[2]  # textsa_label
 
-        total_label = []
         text_S1, text_S2, code, queries, labels, ids1 = self.get_data(path)
         labelpred = model.predict([np.array(text_S1), np.array(text_S2), np.array(code), np.array(queries)],
                            batch_size=100)
         labelpred1 = np.argmax(labelpred, axis=1)
 
-        total_label.append(ids1)
-        total_label.append(my_pre1)
-        total_label.append(my_pre2)
-        total_label.append(labelpred1.tolist())
-        f = open(save_path, "w")
-        f.write(str(total_label))
-        f.close()
+        total_label = [ids1, my_pre1, my_pre2, labelpred1.tolist()]
+        with open(save_path, "w") as f:
+            f.write(str(total_label))
         print("codesa标签已打完")
 
 
@@ -227,30 +221,24 @@ def final_analay(path,hnn_path,save_path):
     codemf_lable = pre[1]
     textsa_lable = pre[2]
     codesa_lable = pre[3]
-    hnn_lable_1 =[]
     with open(hnn_path, 'r')as f:
         hnn = eval(f.read())
         f.close()
-    for i in range(0,len(hnn[0])):
-        if(hnn[1][i]==1):
-            hnn_lable_1.append(hnn[0][i])
-
+    hnn_lable_1 = [hnn[0][i] for i in range(0,len(hnn[0])) if (hnn[1][i]==1)]
     total_final =[]
     count = 0
     for i in range(0,len(ids)):
-        if(codesa_lable[i]==1 and textsa_lable[i]==1 and codemf_lable[i]==1):
+        if (codesa_lable[i]==1 and textsa_lable[i]==1 and codemf_lable[i]==1):
             if ids[i] in hnn[0]:
                 continue
-            else:
-                total_final.append(ids[i])
-                count +=1
-    total_final = total_final+hnn_lable_1
-    f = open(save_path, "w")
-    print(len(total_final))
-    for i in range(0,len(total_final)):
-        f.writelines(str(total_final[i]))
-        f.writelines('\n')
-    f.close()
+            total_final.append(ids[i])
+            count +=1
+    total_final += hnn_lable_1
+    with open(save_path, "w") as f:
+        print(len(total_final))
+        for i in range(0,len(total_final)):
+            f.writelines(str(total_final[i]))
+            f.writelines('\n')
 
 #将hnn标签替换到已达标签语料中
 '''
@@ -264,40 +252,32 @@ def final_analay_large(path,hnn_path,single_path,save_path):
     codemf_lable = pre[1]
     textsa_lable = pre[2]
     codesa_lable = pre[3]
-    hnn_lable_1 =[]
     with open(hnn_path, 'r')as f:
         hnn = eval(f.read())
         f.close()
-    for i in range(0,len(hnn[0])):
-        if(hnn[1][i]==1):
-            hnn_lable_1.append(hnn[0][i])
-
+    hnn_lable_1 = [hnn[0][i] for i in range(0,len(hnn[0])) if (hnn[1][i]==1)]
     total_final =[]
     count = 0
     for i in range(0,len(ids)):
-        if(codesa_lable[i]==1 and textsa_lable[i]==1 and codemf_lable[i]==1):
+        if (codesa_lable[i]==1 and textsa_lable[i]==1 and codemf_lable[i]==1):
             if ids[i] in hnn[0]:
                 continue
-            else:
-                total_final.append(ids[i])
-                count +=1
+            total_final.append(ids[i])
+            count +=1
     with open(single_path, 'r')as f:
         single = eval(f.read())
         f.close()
-    single_ids = []
-    for i in range(0,len(single)):
-        single_ids.append(single[i][0])
+    single_ids = [single[i][0] for i in range(0,len(single))]
     print(len(single_ids))
     #total_final = total_final+hnn_lable_1+single_ids
-    total_final = total_final + hnn_lable_1
+    total_final += hnn_lable_1
     print(count)
 
-    f = open(save_path, "w")
-    print(total_final[1])
-    for i in range(0,len(total_final)):
-        f.writelines(str(total_final[i]))
-        f.writelines('\n')
-    f.close()
+    with open(save_path, "w") as f:
+        print(total_final[1])
+        for i in range(0,len(total_final)):
+            f.writelines(str(total_final[i]))
+            f.writelines('\n')
 
 
 

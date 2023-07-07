@@ -40,10 +40,8 @@ def vocab_prpcessing(filepath1,filepath2,save_path):
         f.close()
 
     x1= get_vocab(total_data2,total_data2)
-    #total_data_sort = sorted(x1, key=lambda x: (x[0], x[1]))
-    f = open(save_path, "w")
-    f.write(str(x1))
-    f.close()
+    with open(save_path, "w") as f:
+        f.write(str(x1))
 
 
 def final_vocab_prpcessing(filepath1,filepath2,save_path):
@@ -64,9 +62,8 @@ def final_vocab_prpcessing(filepath1,filepath2,save_path):
             word_set.add(i)
     print(len(total_data1))
     print(len(word_set))
-    f = open(save_path, "w")
-    f.write(str(word_set))
-    f.close()
+    with open(save_path, "w") as f:
+        f.write(str(word_set))
 
 
 

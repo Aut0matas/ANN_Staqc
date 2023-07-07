@@ -32,8 +32,7 @@ class LayerNormalization(Layer):
     def call(self, inputs):
         mean, variance = tf.nn.moments(inputs, [-1], keepdims=True)
         normalized = (inputs - mean) / ((variance + self._epsilon) ** 0.5)
-        outputs = self.gamma * normalized + self.beta
-        return outputs
+        return self.gamma * normalized + self.beta
 
     def compute_output_shape(self, input_shape):
         return input_shape
