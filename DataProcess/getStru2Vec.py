@@ -11,6 +11,7 @@ from DataProcess.sqlang_structured import (
     sqlangContextParse,
     sqlangQueryParse,
 )
+from paths import PYTHON_PATHS, SQL_PATHS
 
 sys.path.append("..")
 
