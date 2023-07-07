@@ -4,22 +4,22 @@ import tensorflow as tf
 
 
 class SelfAttention(Layer):
-    def __init__(self, num_heads, hidden_size, name, **kwargs):
+    def __init__(self, num_heads, attention_dim, name, **kwargs):
         self.num_heads = num_heads
-        self.hidden_size = hidden_size
+        self.attention_dim = attention_dim
         self.scope = name
         super(SelfAttention, self).__init__(**kwargs)
 
     def build(self, input_shape):
         self.weight_1 = self.add_weight(
             name=f"weight_1_{self.scope}",
-            shape=(input_shape[2], self.hidden_size),
+            shape=(input_shape[2], self.attention_dim),
             initializer="glorot_uniform",
             trainable=True,
         )
         self.weight_2 = self.add_weight(
             name=f"weight_2_{self.scope}",
-            shape=(self.hidden_size, self.num_heads),
+            shape=(self.attention_dim, self.num_heads),
             initializer="glorot_uniform",
             trainable=True,
         )
@@ -46,6 +46,6 @@ class SelfAttention(Layer):
 
     def compute_output_shape(self, input_shape):
         return [
-            (input_shape[0], self.hidden_size, self.num_heads),
+            (input_shape[0], self.attention_dim, self.num_heads),
             (input_shape[0],),
         ]
